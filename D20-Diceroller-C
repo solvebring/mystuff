@@ -1,0 +1,77 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <string.h>
+#include <ctype.h>
+
+#define BOLD "\033[1m"
+#define RESET "\033[0m"
+#define RED_BOLD "\033[1;31m"
+
+// ANSI escape code to clear the screen
+#define CLEAR_SCREEN "\033[H\033[J"
+
+void roll_dice(char *dice_notation) {
+    int total = 0;
+   
+    // Convert 'D' to 'd' to make the code case-insensitive
+    for (int i = 0; dice_notation[i]; i++) {
+        dice_notation[i] = tolower(dice_notation[i]);
+    }
+   
+    // Clear the screen before each new roll
+    printf(CLEAR_SCREEN);
+   
+    printf(BOLD "Roll: %s\n" RESET, dice_notation); // Display the full notation in bold
+   
+    char *token = strtok(dice_notation, " ");
+    while (token != NULL) {
+        int num_dice = 0, dice_sides = 0, modifier = 0, individual_total = 0;
+        char *mod_pos = NULL;
+
+        // Check if there is a modifier (+ or -)
+        if ((mod_pos = strchr(token, '+')) || (mod_pos = strchr(token, '-'))) {
+            modifier = atoi(mod_pos);  // Extract the modifier
+            *mod_pos = '\0';  // Terminate the string at the modification sign to handle the dice notation separately
+        }
+
+        // Attempt to read the number of dice and sides
+        if (sscanf(token, "%dd%d", &num_dice, &dice_sides) == 2) {
+            printf("Individual dice rolls for %s: ", token);
+            for (int i = 0; i < num_dice; i++) {
+                int roll = (rand() % dice_sides) + 1;
+                individual_total += roll;
+
+                // If we have a d20 and the roll is 20 without modification, display CRITICAL HIT!
+                if (dice_sides == 20 && roll == 20) {
+                    printf(RED_BOLD "CRITICAL HIT! %d " RESET, roll);
+                } else {
+                    printf("%d ", roll);
+                }
+            }
+
+            individual_total += modifier;
+            total += individual_total;
+            printf("\nModifier: %d\n", modifier);
+            printf("Total for this part: %d\n", individual_total);
+        }
+        token = strtok(NULL, " ");
+    }
+   
+    printf("Total for all rolls: %d\n", total);
+}
+
+int main() {
+    char input[100];
+   
+    srand(time(NULL)); // Initialize once when the program starts
+   
+    while (1) { // Infinite loop to rerun the program automatically
+        printf("Enter dice roll (e.g., 3d6+1 4d20+1 1d12+4): ");
+        fgets(input, sizeof(input), stdin);  // Use fgets instead of scanf to handle spaces
+        input[strcspn(input, "\n")] = 0;    // Remove newline after input
+        roll_dice(input);  // Process the dice roll and clear the screen each time
+    }
+   
+    return 0;
+}
