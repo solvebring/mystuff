@@ -1,0 +1,112 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <string.h>
+#include <ctype.h>
+
+#define BOLD "\033[1m"
+#define RESET "\033[0m"
+#define RED_BOLD "\033[1;31m"
+#define CLEAR_SCREEN "\033[H\033[J"
+
+char language[3] = "EN"; // Default language
+
+// Function to return translated text based on selected language
+const char* translate(const char* sv, const char* en, const char* it, const char* sp, const char* de, const char* fr, const char* pt, const char* nl) {
+    if (strcmp(language, "SV") == 0) return sv;
+    if (strcmp(language, "IT") == 0) return it;
+    if (strcmp(language, "SP") == 0) return sp;
+    if (strcmp(language, "DE") == 0) return de;
+    if (strcmp(language, "FR") == 0) return fr;
+    if (strcmp(language, "PT") == 0) return pt;
+    if (strcmp(language, "NL") == 0) return nl;
+    return en;
+}
+
+// Function to convert a string to uppercase
+void to_uppercase(char *str) {
+    for (int i = 0; str[i]; i++) {
+        str[i] = toupper((unsigned char)str[i]);
+    }
+}
+
+void roll_dice(char *dice_notation) {
+    if (strlen(dice_notation) == 0) {
+        return;
+    }
+    
+    int total = 0;
+    for (int i = 0; dice_notation[i]; i++) {
+        dice_notation[i] = tolower(dice_notation[i]);
+    }
+
+    printf(CLEAR_SCREEN);
+    printf(BOLD "%s" RESET "\n", translate("Kast:", "Roll:", "Lancio:", "Tirada:", "Wurf:", "Lancer:", "Lançamento:", "Worp:"));
+
+    char *token = strtok(dice_notation, " ");
+    while (token != NULL) {
+        int num_dice = 0, dice_sides = 0, modifier = 0, individual_total = 0;
+        char *mod_pos = NULL;
+
+        if ((mod_pos = strchr(token, '+')) || (mod_pos = strchr(token, '-'))) {
+            modifier = atoi(mod_pos);
+            *mod_pos = '\0';
+        }
+
+        // If the notation doesn't have a number before 'd', assume it's 1
+        if (sscanf(token, "%dd%d", &num_dice, &dice_sides) != 2) {
+            if (sscanf(token, "d%d", &dice_sides) == 1) {
+                num_dice = 1; // Default to 1 die if no number before 'd'
+            }
+        }
+
+        if (num_dice > 0 && dice_sides > 0) {
+            printf("%s", translate("Individuella tärningskast för", "Individual dice rolls for", "Tiri individuali per", "Tiradas individuales para", "Einzelne Würfelwürfe für", "Lancers individuels pour", "Lançamentos individuais para", "Individuele worpen voor"));
+            printf(" %s: ", token);
+            
+            for (int i = 0; i < num_dice; i++) {
+                int roll = (rand() % dice_sides) + 1;
+                individual_total += roll;
+
+                if (dice_sides == 20 && roll == 20) {
+                    printf(RED_BOLD "%s %d " RESET, translate("KRITISK TRÄFF!", "CRITICAL HIT!", "COLPO CRITICO!", "¡GOLPE CRÍTICO!", "KRITISCHER TREFFER!", "COUP CRITIQUE!", "GOLPE CRÍTICO!", "KRITISCHE HIT!"), roll);
+                } else {
+                    printf("%d ", roll);
+                }
+            }
+            
+            individual_total += modifier;
+            total += individual_total;
+            printf("\n%s %d\n", translate("Modifierare:", "Modifier:", "Modificatore:", "Modificador:", "Modifikator:", "Modificateur:", "Modificador:", "Modifier"), modifier);
+            printf("%s %d\n", translate("Total för denna del:", "Total for this part:", "Totale per questa parte:", "Total para esta parte:", "Gesamtsumme für diesen Teil:", "Total pour cette partie:", "Total para esta parte:", "Totaal voor dit deel:"), individual_total);
+        }
+        token = strtok(NULL, " ");
+    }
+    
+    printf("%s %d\n", translate("Totalt för alla kast:", "Total for all rolls:", "Totale per tutti i lanci:", "Total de todas las tiradas:", "Gesamtsumme für alle Würfe:", "Total de tous les lancers:", "Total de todos os lançamentos:", "Totaal voor alle worpen:"), total);
+}
+
+void select_language() {
+    printf("Select language (EN, SV, IT, SP, DE, FR, PT, NL): ");
+    scanf("%2s", language);  // Use scanf instead of fgets for language input
+    getchar();  // Remove any leftover newline character from the buffer
+    to_uppercase(language);  // Convert language to uppercase to make it case insensitive
+}
+
+int main() {
+    char input[100];
+    srand(time(NULL));
+
+    select_language();  // Select language only once at the start
+    
+    while (1) {
+        printf("%s", translate("Ange tärningskast (t.ex. 3d6+1 4d20+1 1d12+4): ", "Enter dice roll (e.g., 3d6+1 4d20+1 1d12+4): ", "Inserisci il lancio di dadi (es. 3d6+1 4d20+1 1d12+4): ", "Ingrese la tirada de dados (ej. 3d6+1 4d20+1 1d12+4): ", "Würfeln eingeben (z.B. 3d6+1 4d20+1 1d12+4): ", "Entrez le lancer de dés (ex. 3d6+1 4d20+1 1d12+4): ", "Insira o lançamento de dados (ex. 3d6+1 4d20+1 1d12+4): ", "Voer dobbelsteenworp in (bijv. 3d6+1 4d20+1 1d12+4): "));
+        fgets(input, sizeof(input), stdin);
+        input[strcspn(input, "\n")] = 0;
+
+        if (strlen(input) > 0) {
+            roll_dice(input);
+        }
+    }
+    return 0;
+}
